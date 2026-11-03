@@ -18,6 +18,8 @@ $process=Start-Process -FilePath $exe -ArgumentList '--crash-write-test','--data
 if($process.ExitCode-ne23){throw 'Crash writer did not exit as expected'}
 $report=Join-Path $root 'crash-reopen.json'
 $process=Start-Process -FilePath $exe -ArgumentList '--crash-reopen-test','--data-dir',('"'+$crashData+'"'),'--report',('"'+$report+'"') -WindowStyle Hidden -PassThru -Wait
-$result=Get-Content -LiteralPath $report -Raw|ConvertFrom-Json
-if($process.ExitCode-ne0-or!$result.passed){throw 'Abrupt-exit recovery failed'}
+$raw=Get-Content -LiteralPath $report -Raw
+if($process.ExitCode-ne0){throw ('Abrupt-exit recovery failed: '+$raw)}
+$result=$raw|ConvertFrom-Json
+if(!$result.passed){throw ('Abrupt-exit recovery failed: '+$raw)}
 Write-Output ('Abrupt-exit recovery passed. Reports: '+$root)
