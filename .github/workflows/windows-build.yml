@@ -1,0 +1,34 @@
+name: Windows build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-2022
+    timeout-minutes: 15
+    defaults:
+      run:
+        shell: powershell
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Build app
+        run: .\build.ps1
+      - name: Isolated regression checks
+        run: .\test.ps1
+      - name: Build installer
+        run: .\package.ps1
+      - uses: actions/upload-artifact@v7
+        with:
+          name: PaperNest-Windows
+          path: build/PaperNest-Setup.exe
+          if-no-files-found: error
+          retention-days: 14
