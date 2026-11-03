@@ -13,6 +13,8 @@ First public open-source release.
 
 - Concurrent readers no longer block atomic note-index and draft saves during rapid app commands.
 
+- Draft recovery preserves the latest edit even when edits share a serialized millisecond; edit stamps stay ordered across coarse or backward-moving clocks.
+
 ### Included
 
 - English and Simplified Chinese, live language switching and bilingual installation.
@@ -23,7 +25,7 @@ First public open-source release.
 
 ### Validation
 
-The Windows release passed 82 core checks across six regression suites and 33 installer/lifecycle checks. Three complete exit/reopen cycles preserved the existing workspace on the creator's machine. These checks do not imply certification across every Windows configuration.
+The Windows release passed 86 core checks across six regression suites and 33 installer/lifecycle checks. Three complete exit/reopen cycles preserved the existing workspace on the creator's machine. These checks do not imply certification across every Windows configuration.
 
 ## Before the public release
 
