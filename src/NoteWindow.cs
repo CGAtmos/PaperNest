@@ -142,7 +142,7 @@ namespace PaperNest {
             if(Data.Locked==locked)return true;
             // Commit pending edits before making the note read-only.
             if(!app.SaveAll())return false;
-            bool previous=Data.Locked;Data.Locked=locked;Data.Updated=DateTime.UtcNow;ApplyLock();RefreshLanguage();
+            bool previous=Data.Locked;Data.Locked=locked;Data.Updated=Store.NextUpdate(Data.Updated);ApplyLock();RefreshLanguage();
             if(!app.SaveAll()){Data.Locked=previous;ApplyLock();RefreshLanguage();return false;}
             return true;
         }
@@ -195,7 +195,7 @@ namespace PaperNest {
             RoutedEventHandler changed=delegate{field.Opacity=check.IsChecked==true?.48:1;if(!loading){SyncChecklist();app.NoteChanged(this,true);}};check.Checked+=changed;check.Unchecked+=changed;field.Opacity=done?.48:1;
             checks.Add(check);lines.Add(field);row.Children.Add(check);Grid.SetColumn(field,1);row.Children.Add(field);checklist.Children.Add(row);
         }
-        void SyncChecklist() {if(checklist==null)return;Data.Items=lines.Select(l=>l.Text).ToList();Data.Text=String.Join("\n",Data.Items);Data.Checks=String.Concat(checks.Select(c=>c.IsChecked==true?"1":"0"));Data.Updated=DateTime.UtcNow;}
+        void SyncChecklist() {if(checklist==null)return;Data.Items=lines.Select(l=>l.Text).ToList();Data.Text=String.Join("\n",Data.Items);Data.Checks=String.Concat(checks.Select(c=>c.IsChecked==true?"1":"0"));Data.Updated=Store.NextUpdate(Data.Updated);}
         internal void SplitChecklistItem(TextBox field){
             if(Data.Locked)return;int index=lines.IndexOf(field);if(index<0)return;SyncChecklist();string value=field.Text;int start=field.SelectionStart,length=field.SelectionLength;
             Data.Items[index]=value.Substring(0,start);Data.Items.Insert(index+1,value.Substring(start+length));Data.Text=String.Join("\n",Data.Items);Data.Checks=(Data.Checks??"").PadRight(Data.Items.Count-1,'0').Insert(index+1,"0");RebuildChecklist();lines[index+1].Focus();lines[index+1].CaretIndex=0;app.NoteChanged(this,true);
@@ -217,7 +217,7 @@ namespace PaperNest {
             foreach(TextBox line in lines)line.FontSize=23*Data.Zoom;AdjustImages();
         }
         public void ApplyAppearance(){paper.ColorName=Data.Color;paper.Texture=app.Store.Data.Texture;paper.InvalidateVisual();decoration.Kind=Data.Decoration;decoration.InvalidateVisual();if(doodle!=null){doodle.ColorName=Data.Color;doodle.InvalidateVisual();}Topmost=Data.Pinned;ApplyTilt();}
-        public void HideNote(){Data.Hidden=true;Data.Updated=DateTime.UtcNow;if(app.SaveAll())Hide();else Data.Hidden=false;}
+        public void HideNote(){Data.Hidden=true;Data.Updated=Store.NextUpdate(Data.Updated);if(app.SaveAll())Hide();else Data.Hidden=false;}
         public void SetSaveStatus(string text,bool error){if(saveStatus!=null){saveStatus.Text=(Data.Locked?L.T("已锁定")+" · ":"")+text;saveStatus.Foreground=error?Look.Brush("#B34A35"):Look.Muted;}}
         public void CaptureDraft(){if(editor!=null)Data.Text=new TextRange(editor.Document.ContentStart,editor.Document.ContentEnd).Text;if(checklist!=null)SyncChecklist();if(caption!=null)Data.Text=caption.Text;}
         void Snap() {
@@ -279,7 +279,7 @@ namespace PaperNest {
                 Data.Text=new TextRange(editor.Document.ContentStart,editor.Document.ContentEnd).Text;
                 if(contentDirty) {
                     using(MemoryStream memory=new MemoryStream()){new TextRange(editor.Document.ContentStart,editor.Document.ContentEnd).Save(memory,DataFormats.XamlPackage);byte[] bytes=memory.ToArray();Store.AtomicWrite(app.Store.DocumentPath(Data),bytes,true);app.Store.SaveDocumentVersion(Data,bytes);}
-                    contentDirty=false;Data.Updated=DateTime.UtcNow;Data.DocumentSavedAt=DateTime.UtcNow;
+                    contentDirty=false;Data.Updated=Store.NextUpdate(Data.Updated);Data.DocumentSavedAt=Data.Updated;
                 }
                 if(String.IsNullOrEmpty(Data.DocumentRevision)&&File.Exists(app.Store.DocumentPath(Data)))app.Store.SaveDocumentVersion(Data,File.ReadAllBytes(app.Store.DocumentPath(Data)));
             }

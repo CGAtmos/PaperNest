@@ -116,7 +116,7 @@ namespace PaperNest {
         }
         public void ScheduleSave() { savePending=true;if(saveTimer!=null&&!saveTimer.IsEnabled)saveTimer.Start(); }
         public void NoteChanged(NoteWindow window,bool content) {
-            window.CaptureDraft();window.Data.Updated=DateTime.UtcNow;if(content)window.Data.ContentUpdated=window.Data.Updated;
+            window.CaptureDraft();window.Data.Updated=PaperNest.Store.NextUpdate(window.Data.Updated);if(content)window.Data.ContentUpdated=window.Data.Updated;
             window.SetSaveStatus(L.T("保存中…"),false);
             try{Store.SaveDraft(window.Data);}catch(Exception ex){SaveFailed(ex);}
             ScheduleSave();

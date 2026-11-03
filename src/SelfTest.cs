@@ -31,6 +31,16 @@ namespace PaperNest {
                 Assert(data.Angle==-2.5&&((RotateTransform)window.Frame.RenderTransform).Angle==-2.5,"tilt slider rotates only its own editable paper",results);
                 window.SetAngle(100);Assert(data.Angle==5,"manual rotation stays within the supported paper bounds",results);window.SetAngle(-2.5);
                 Assert(app.SaveAll(),"atomic save succeeds",results);
+                string collisionRoot=Path.Combine(root,"equal-timestamps");Store collision=new Store(collisionRoot);
+                DateTime stamp=new DateTime(2026,1,2,3,4,5,DateTimeKind.Utc);
+                NoteData savedNote=new NoteData{Title="Saved title",Text="Saved body",Updated=stamp,ContentUpdated=stamp};collision.Data.Notes.Add(savedNote);collision.Save();
+                NoteData latestDraft=Store.Clone(savedNote);latestDraft.Title="Latest draft";latestDraft.Text="Latest unsaved body";collision.SaveDraft(latestDraft);
+                Store collisionReload=new Store(collisionRoot);
+                Assert(collisionReload.Data.Notes.Single().Title==latestDraft.Title&&collisionReload.Data.Notes.Single().Text==latestDraft.Text,"a newer draft survives equal serialized timestamps after an abrupt exit",results);
+                collisionReload.Save();Assert(new Store(collisionRoot).LoadWarning=="","identical committed drafts do not report a false recovery on every launch",results);
+                DateTime future=DateTime.UtcNow.AddSeconds(2);DateTime firstStamp=Store.NextUpdate(future),secondStamp=Store.NextUpdate(firstStamp);
+                Assert(firstStamp>future&&secondStamp>firstStamp,"edit stamps remain ordered when the system clock repeats or moves backward",results);
+                Assert(Store.Clone(new NoteData{Updated=secondStamp}).Updated>Store.Clone(new NoteData{Updated=firstStamp}).Updated,"rapid edit ordering survives JSON millisecond serialization",results);
                 string priorSnapshot=File.ReadAllText(app.Store.StatePath);
                 using(FileStream reader=Store.OpenSnapshot(app.Store.StatePath))
                 using(FileStream draftReader=Store.OpenSnapshot(Path.Combine(app.Store.DraftRoot,data.Id+".json"))){

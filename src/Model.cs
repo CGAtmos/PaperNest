@@ -73,6 +73,12 @@ namespace PaperNest {
         }
         // Atomic replacement must remain possible while another instance reads a snapshot.
         internal static FileStream OpenSnapshot(string path){return new FileStream(path,FileMode.Open,FileAccess.Read,FileShare.Read|FileShare.Delete);}
+        internal static DateTime NextUpdate(DateTime previous){
+            // DataContract JSON stores milliseconds, so sub-millisecond edits need distinct stamps.
+            long now=DateTime.UtcNow.Ticks/TimeSpan.TicksPerMillisecond;
+            long last=previous.ToUniversalTime().Ticks/TimeSpan.TicksPerMillisecond;
+            return new DateTime(Math.Max(now,last+1)*TimeSpan.TicksPerMillisecond,DateTimeKind.Utc);
+        }
         static byte[] ReadSnapshot(string path){using(FileStream stream=OpenSnapshot(path))using(MemoryStream bytes=new MemoryStream()){stream.CopyTo(bytes);return bytes.ToArray();}}
         AppData Read(string path) {
             using (FileStream stream = OpenSnapshot(path)) {
@@ -95,7 +101,7 @@ namespace PaperNest {
                 NoteData draft=ReadDraft(file);if(draft==null)draft=ReadDraft(file+".bak");if(draft==null)continue;
                 NoteData current=loaded.Notes.FirstOrDefault(n=>n.Id==draft.Id);
                 if(current==null){loaded.Notes.Add(draft);recovered++;}
-                else if(draft.Updated>current.Updated){loaded.Notes[loaded.Notes.IndexOf(current)]=draft;recovered++;}
+                else if(draft.Updated>current.Updated||(draft.Updated==current.Updated&&!Serialize(draft,typeof(NoteData)).SequenceEqual(Serialize(current,typeof(NoteData))))){loaded.Notes[loaded.Notes.IndexOf(current)]=draft;recovered++;}
             }
             // A missing manifest must not orphan the corresponding readable backup drafts.
             foreach(string file in Directory.GetFiles(DraftRoot,"*.json.bak")) {
