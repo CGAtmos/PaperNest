@@ -1,0 +1,16 @@
+/build/
+/qa/
+/recovery/
+/Data/
+/outputs/
+*.pdb
+*.log
+*.user
+*.suo
+.vs/
+.idea/
+notes.json*
+*.xamlpackage*
+.writer.lock
+Thumbs.db
+Desktop.ini
